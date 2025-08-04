@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "-----> CMake Buildpack"
+CMAKE_RELEASE_TAG="4.0.3"
+CMAKE_RELEASE_ARCH=$(uname -m)
+
+# Only deal with known architectures
+# The builder (e.g. heroku/builder:24) also needs to support one of these
+if [ "${CMAKE_RELEASE_ARCH}" != "x86_64" ] && [ "${CMAKE_RELEASE_ARCH}" != "aarch64" ];
+then
+  echo "Unsupported architecture: ${CMAKE_RELEASE_ARCH}"
+  exit 1
+fi
+
+cmake_layer="${CNB_LAYERS_DIR}/cmake"
+mkdir -p "${cmake_layer}"
+
+# Install CMake
+cmake_release_url="https://github.com/Kitware/CMake/releases/download/v${CMAKE_RELEASE_TAG}/cmake-${CMAKE_RELEASE_TAG}-linux-${CMAKE_RELEASE_ARCH}.tar.gz"
+echo "Installing CMake from ${cmake_release_url}"
+wget -q -O - "${cmake_release_url}" | tar -xzf - --strip-components 1 -C "${cmake_layer}"
+
+# Cache CMake install
+cat >"${CNB_LAYERS_DIR}/cmake.toml" <<'EOF'
+[types]
+launch = false
+build = false
+cache = true
+EOF
+
+# Check for an environment file and load it if found
+# This allows us to find dependencies installed with `Aptfile`, which are stored in their own layer
+apt_env_file="/layers/fagiani_apt/apt/.profile.d/000_apt.sh"
+if [ -f "${apt_env_file}" ];
+then
+  echo "Loading environment variables from ${apt_env_file}"
+  source "${apt_env_file}"
+fi
+
+# Execute build within the workspace
+cd /workspace
+
+# Generate build files
+echo "Generating build files in workspace"
+"${cmake_layer}/bin/cmake" .
+
+# Build
+echo "Executing build in workspace"
+"${cmake_layer}/bin/cmake" --build .

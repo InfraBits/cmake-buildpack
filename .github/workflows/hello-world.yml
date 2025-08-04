@@ -1,0 +1,55 @@
+name: Test building hello-world-app
+on: [push]
+permissions:
+  contents: write
+  packages: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install pack
+        run: |
+          sudo add-apt-repository ppa:cncf-buildpacks/pack-cli
+          sudo apt-get update
+          sudo apt-get install pack-cli
+
+      - name: Configure pack builder
+        run: |
+          pack config default-builder tools-harbor.wmcloud.org/toolforge/heroku-builder:22
+          pack config trusted-builders add tools-harbor.wmcloud.org/toolforge/heroku-builder:22
+
+      - name: Checkout cmake-buildpack
+        uses: actions/checkout@v4
+        with:
+          path: cmake-buildpack
+
+      - name: Checkout apt-buildpack
+        run: |
+          git clone https://gitlab.wikimedia.org/repos/cloud/toolforge/buildpacks/apt-buildpack.git
+
+      - name: Checkout hello-world-cmake
+        uses: actions/checkout@v4
+        with:
+          repository: 'InfraBits/hello-world-cmake'
+          path: hello-world-cmake
+
+      - name: Build hello-world app
+        run: |
+          pack build \
+            hello-world-app:${{ github.sha }} \
+            --path hello-world-cmake \
+            --buildpack apt-buildpack \
+            --buildpack cmake-buildpack
+
+      - name: Authenticate to ghcr.io
+        run: |
+          echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+      - name: Publish container
+        run: |
+          docker tag hello-world-app:${{ github.sha }} ghcr.io/infrabits/cmake-buildpack/hello-world-app:${{ github.sha }}
+          docker push ghcr.io/infrabits/cmake-buildpack/hello-world-app:${{ github.sha }}
+
+      - name: Run built container
+        run: |
+          docker run -i ghcr.io/infrabits/cmake-buildpack/hello-world-app:${{ github.sha }} ./hello-world

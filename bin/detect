@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+if [[ -f CMakeLists.txt ]];
+then
+  echo "Found CMakeLists.txt"
+  exit 0
+else
+  echo "No CMakeLists.txt"
+  exit 1
+fi
