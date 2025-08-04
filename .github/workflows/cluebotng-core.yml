@@ -1,0 +1,56 @@
+name: Test building ClueBot NG Core
+on: [pull_request]
+permissions:
+  contents: write
+  packages: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install pack
+        run: |
+          sudo add-apt-repository ppa:cncf-buildpacks/pack-cli
+          sudo apt-get update
+          sudo apt-get install pack-cli
+
+      - name: Configure pack builder
+        run: |
+          pack config default-builder tools-harbor.wmcloud.org/toolforge/heroku-builder:22
+          pack config trusted-builders add tools-harbor.wmcloud.org/toolforge/heroku-builder:22
+
+      - name: Checkout cmake-buildpack
+        uses: actions/checkout@v4
+        with:
+          path: cmake-buildpack
+
+      - name: Checkout apt-buildpack
+        run: |
+          git clone https://gitlab.wikimedia.org/repos/cloud/toolforge/buildpacks/apt-buildpack.git
+
+      - name: Checkout core
+        uses: actions/checkout@v4
+        with:
+          repository: 'cluebotng/core'
+          ref: feature/support-running-in-pack
+          path: core
+
+      - name: Build core app
+        run: |
+          pack build \
+            cluebotng-core:${{ github.sha }} \
+            --path core \
+            --buildpack apt-buildpack \
+            --buildpack cmake-buildpack
+
+      - name: Authenticate to ghcr.io
+        run: |
+          echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+      - name: Publish container
+        run: |
+          docker tag cluebotng-core:${{ github.sha }} ghcr.io/infrabits/cmake-buildpack/cluebotng-core:${{ github.sha }}
+          docker push ghcr.io/infrabits/cmake-buildpack/cluebotng-core:${{ github.sha }}
+
+      - name: Run built container
+        run: |
+          docker run -i ghcr.io/infrabits/cmake-buildpack/cluebotng-core:${{ github.sha }} ./print_bayes_db data/bayes.db
