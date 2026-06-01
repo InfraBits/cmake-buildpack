@@ -3,6 +3,13 @@
 if [[ -f CMakeLists.txt ]];
 then
   echo "Found CMakeLists.txt"
+
+  # Ensure system packages are installed prior to our run (optional ordering)
+  cat > "${2}" <<'EOF'
+[[requires]]
+  name = "heroku/deb-packages"
+  optional = true
+EOF
   exit 0
 else
   echo "No CMakeLists.txt"
