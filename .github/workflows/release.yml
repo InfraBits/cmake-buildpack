@@ -1,0 +1,60 @@
+name: Release
+on: { push: { tags: [ 'v*' ] } }
+permissions:
+  deployments: write
+  contents: write
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Package buildpack
+        run: |
+          tar -cvzf buildpack.tar.gz buildpack.toml bin/
+
+      - name: Create GitHub release
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const tag_name = context.ref.replace(/^refs\/tags\//, '');
+
+            let release = null;
+            try {
+              release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tag_name
+              });
+
+              console.log(`Release already exists for tag: ${release.data.name} (${release.data.id})`);
+              need_to_create_release = false;
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+            }
+
+            if (!release) {
+              release = await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: `Release ${tag_name}`,
+                tag_name: tag_name,
+                draft: false,
+                prerelease: false,
+                generate_release_notes: true,
+              });
+              console.log(`Created release for tag: ${release.data.name} (${release.data.id})`);
+            }
+
+            const fs = require('fs');
+            const asset = fs.readFileSync("buildpack.tar.gz");
+            const response = await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "buildpack.tar.gz",
+              data: fs.readFileSync("buildpack.tar.gz"),
+            });
+            console.log(`Uploaded asset: ${response.data.browser_download_url}`);
