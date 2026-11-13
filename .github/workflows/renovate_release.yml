@@ -1,0 +1,36 @@
+name: Create Release For Renovate
+on: { push: { branches: [ 'main' ] } }
+jobs:
+  renovate-release:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.renovate-release.outputs.tag_name }}
+    permissions:
+      contents: write
+    steps:
+      - id: renovate-release
+        uses: infrabits/ci-create-renovate-release@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  upload-buildpack:
+    runs-on: ubuntu-latest
+    needs: [renovate-release]
+    if: needs.renovate-release.outputs.tag_name
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.renovate-release.outputs.tag_name }}
+
+      - name: Package buildpack
+        run: |
+          tar -cvzf buildpack.tar.gz buildpack.toml bin/
+
+      - name: Upload buildpack to release
+        uses: infrabits/ci-create-missing-release@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ needs.renovate-release.outputs.tag_name }}
+          artifacts: buildpack.tar.gz
