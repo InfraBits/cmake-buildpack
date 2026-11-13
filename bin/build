@@ -3,7 +3,7 @@ set -euo pipefail
 
 echo "-----> CMake Buildpack"
 # renovate: datasource=github-releases depName=Kitware/CMake
-CMAKE_RELEASE_TAG="4.0.3"
+CMAKE_RELEASE_TAG="4.5.0"
 CMAKE_RELEASE_ARCH=$(uname -m)
 
 # Only deal with known architectures
