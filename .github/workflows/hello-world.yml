@@ -8,18 +8,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout cmake-buildpack
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           path: cmake-buildpack
 
       - name: Checkout hello-world-cmake
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: 'InfraBits/hello-world-cmake'
           path: hello-world-cmake
 
       - name: Build hello-world app
-        uses: infrabits/ci-pack@main
+        uses: infrabits/ci-pack@0153f5efded1f9130ab375f39a174a766e0f0571 # main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           image: ghcr.io/infrabits/cmake-buildpack/hello-world-app:${{ github.sha }}
