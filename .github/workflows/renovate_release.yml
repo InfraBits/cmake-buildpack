@@ -9,7 +9,7 @@ jobs:
       contents: write
     steps:
       - id: renovate-release
-        uses: infrabits/ci-create-renovate-release@main
+        uses: infrabits/ci-create-renovate-release@723f2b5cccbd256573e58e79b02aad4f78432ae6 # main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -20,7 +20,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           ref: ${{ needs.renovate-release.outputs.tag_name }}
 
@@ -29,7 +29,7 @@ jobs:
           tar -cvzf buildpack.tar.gz buildpack.toml bin/
 
       - name: Upload buildpack to release
-        uses: infrabits/ci-create-missing-release@main
+        uses: infrabits/ci-create-missing-release@74d62a4a8d7b75d49cdd27cd0e22499282bf4f54 # main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ needs.renovate-release.outputs.tag_name }}
