@@ -19,7 +19,7 @@ jobs:
           path: hello-world-cmake
 
       - name: Build hello-world app
-        uses: infrabits/ci-pack@123e34ea7c3cca6f64880f2034f65f2522b5bd3d # main
+        uses: infrabits/ci-pack@d27c669ecf4da7f5be5b8e50ad505c67f0650cf8 # main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           image: ghcr.io/infrabits/cmake-buildpack/hello-world-app:${{ github.sha }}
